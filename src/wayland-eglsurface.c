@@ -46,6 +46,8 @@
 #include <xf86drm.h>
 #include <stdio.h>
 
+#define EGLSURFACE_LOG(...) do { printf ("(%s:%d %s): ", __FILE__, __LINE__, __PRETTY_FUNCTION__); printf (__VA_ARGS__); } while(0)
+
 #define WL_EGL_WINDOW_DESTROY_CALLBACK_SINCE 3
 
 enum BufferReleaseThreadEvents {
@@ -623,6 +625,7 @@ destroy_surface_context(WlEglSurface *surface, WlEglSurfaceCtx *ctx)
     }
 
     if (surf != EGL_NO_SURFACE) {
+		EGLSURFACE_LOG ("surf = %p\n", surf);
         data->egl.destroySurface(dpy, surf);
     }
 
@@ -2498,8 +2501,13 @@ static EGLBoolean wlEglDestroySurface(EGLDisplay dpy, EGLSurface eglSurface)
     WlEglStreamImage      *image;
     uint32_t i;
 
+    EGLSURFACE_LOG ("display = %p, surface = %p\n", display, surface);
+    if (surface) printf ("\t\teglwin = %p, isOffScreen = %s\n", surface->wlEglWin,
+		surface->ctx.isOffscreen ? "TRUE" : "FALSE");
+
     if (!wlEglIsWlEglSurfaceForDisplay(display, surface) ||
         display != surface->wlEglDpy) {
+        printf ("\t\twrong display!\n");
         return EGL_FALSE;
     }
 
@@ -2517,6 +2525,7 @@ static EGLBoolean wlEglDestroySurface(EGLDisplay dpy, EGLSurface eglSurface)
         if (wlEglIsWaylandDisplay(display->nativeDpy) &&
             wlEglIsWaylandWindowValid(surface->wlEglWin)) {
 
+            printf ("\t\tremoving callbacks\n");
             surface->wlEglWin->driver_private = NULL;
             surface->wlEglWin->resize_callback = NULL;
             if (surface->wlEglWinVer >= WL_EGL_WINDOW_DESTROY_CALLBACK_SINCE) {
@@ -2587,6 +2596,8 @@ static EGLBoolean wlEglDestroySurface(EGLDisplay dpy, EGLSurface eglSurface)
 static void
 destroy_callback(void *data)
 {
+	EGLSURFACE_LOG ("data = %p\n", data);
+	if (!data) return;
     WlEglSurface *surface = (WlEglSurface*)data;
     WlEglDisplay *display = surface->wlEglDpy;
 
@@ -2637,6 +2648,8 @@ EGLSurface wlEglCreatePlatformWindowSurfaceHook(EGLDisplay dpy,
     EGLint                err     = EGL_SUCCESS;
     EGLint                surfType;
     int                   drmSyncobjFd = -1;
+
+    EGLSURFACE_LOG ("nativeWin = %p\n", nativeWin);
 
     if (!display) {
         return EGL_NO_SURFACE;
@@ -2963,10 +2976,13 @@ fail:
 
 EGLBoolean wlEglDestroySurfaceHook(EGLDisplay dpy, EGLSurface eglSurface)
 {
+    EGLSURFACE_LOG ("dpy = %p, surface = %p\n", dpy, eglSurface);
+
     WlEglDisplay *display = wlEglAcquireDisplay(dpy);
     EGLint ret = EGL_FALSE;
 
     if (!display) {
+		printf ("\t\tno display!\n");
         return EGL_FALSE;
     }
     pthread_mutex_lock(&display->mutex);
