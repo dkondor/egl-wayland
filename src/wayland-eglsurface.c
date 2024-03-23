@@ -46,7 +46,7 @@
 #include <xf86drm.h>
 #include <stdio.h>
 
-#define EGLSURFACE_LOG(...) do { printf ("(%s:%d %s): ", __FILE__, __LINE__, __PRETTY_FUNCTION__); printf (__VA_ARGS__); } while(0)
+#define EGLSURFACE_LOG(...) do { printf ("(%s:%d %s %lu): ", __FILE__, __LINE__, __PRETTY_FUNCTION__, pthread_self()); printf (__VA_ARGS__); } while(0)
 
 #define WL_EGL_WINDOW_DESTROY_CALLBACK_SINCE 3
 
